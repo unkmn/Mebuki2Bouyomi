@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>NGワード管理</title>
+  <link rel="stylesheet" href="ng_options.css">
+</head>
+<body>
+
+  <h1>NGワード管理</h1>
+
+  <fieldset class="ng-add-form">
+    <legend>NGワード登録</legend>
+    <div class="form-group">
+      <label for="ngWordInput">NGワード</label>
+      <input type="text" id="ngWordInput">
+    </div>
+    <div class="form-group">
+      <label for="matchTypeSelect">一致種別</label>
+      <select id="matchTypeSelect">
+        <option value="partial">部分一致</option>
+        <option value="prefix">前方一致</option>
+        <option value="suffix">後方一致</option>
+        <option value="regex">正規表現</option>
+      </select>
+    </div>
+    <button id="addNgWordButton">NGワードを追加</button>
+  </fieldset>
+
+  <h2>NGワード一覧</h2>
+  <div id="ngListContainer">
+    <table>
+      <thead>
+        <tr>
+          <th>NGワード</th>
+          <th>一致種別</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="ngListBody">
+      </tbody>
+    </table>
+  </div>
+
+  <script src="ng_options.js"></script>
+</body>
+</html>

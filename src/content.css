@@ -1,0 +1,29 @@
+/* 拡張機能が挿入するUIのコンテナ */
+.mebuki-bouyomi-controller {
+  padding: 10px;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mebuki-bouyomi-controller button {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 3px;
+}
+
+.mebuki-bouyomi-controller button:hover {
+  background-color: #f0f0f0;
+}
+
+/* 状態表示テキスト */
+.mebuki-bouyomi-controller span {
+  font-weight: bold;
+}

@@ -1,0 +1,99 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+  background-color: #f9f9f9;
+}
+
+h1 {
+  font-size: 24px;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 10px;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 30px;
+  border-bottom: 1px solid #ddd;
+}
+
+.ng-add-form {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 20px;
+  background-color: #fff;
+  max-width: 600px;
+}
+
+.ng-add-form legend {
+  font-weight: bold;
+  font-size: 18px;
+  padding: 0 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-group input[type="text"],
+.form-group select {
+  width: 95%;
+  max-width: 400px;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px 15px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#ngListContainer table {
+  width: 100%;
+  max-width: 800px;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#ngListContainer th,
+#ngListContainer td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+#ngListContainer th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+#ngListContainer tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+.delete-btn:hover {
+  background-color: #c82333;
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Mebuki2Bouyomi Alpha2</title>
+  <!-- CSS -->
+  <link href="bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+  <!-- JavaScript -->
+  <script src="bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+  <script src="constants.js"></script> <!-- constants.js を先に読み込む -->
+  
+</head>
+<body>
+
+  <div class="container-fluid">
+
+    <div class="row sticky-top bg-white border-bottom">
+      <h1 class="p-2">Mebuki2Bouyomi Beta</h1>
+    </div>
+
+    <div class="mb-4">
+      <div class="form-check form-switch mt-4 mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="enableReading">
+        <label class="form-check-label" for="enableReading">棒読みちゃんでの読み上げを有効にする</label>
+        <div class="form-text">※読み上げには棒読みちゃんを起動しておく必要があります</div>
+      </div>
+      
+      <div class="row g-2 align-items-center mb-2" style="margin-left:32px">
+        <div class="col-auto">
+          <label for="readingStartPosition">読み上げ開始位置</label>
+        </div>
+        <div class="col-auto">
+          <select id="readingStartPosition" class="form-select" aria-label="Default select example">
+            <option value="0">以降の新着レスのみ</option>
+            <option value="1">最初から</option>
+            <option value="2">指定レス番号から</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-2 align-items-center mb-2 d-none" id="startReadingResNumberGroup" style="margin-left:60px">
+        <div class="col-auto">
+          <label for="startReadingResNumber">指定レス番号</label>
+        </div>
+        <div class="col-auto">
+          <input type="number" class="form-control" id="startReadingResNumber" aria-describedby="basic-addon3 basic-addon4" min="1" max="1000">
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="enableFileSave">
+        <label class="form-check-label" for="enableFileSave">新着レスの画像を自動保存する</label>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="button" class="btn btn-secondary" id="downloadAllImages">表示中のスレッド内の画像を全てDLする</button>
+      </div>
+    </div>
+
+    <div class="js-enabled-stream d-none">
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="enableOneComme">
+        <label class="form-check-label" for="enableOneComme">わんコメ連携を有効にする</label>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="form-check form-switch">
+      <input class="form-check-input savable" type="checkbox" role="switch" id="enableStream">
+      <label class="form-check-label" for="enableStream">配信支援機能を利用する</label>
+    </div>
+
+    <hr>
+
+    <h2>各種設定</h2>
+
+    <ul class="nav nav-tabs my-2">
+      <li class="nav-item">
+        <a class="nav-link active js-menutab" data-target-tab="settingTabBouyomi" aria-current="page" href="#">棒読みちゃん</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link js-menutab" data-target-tab="settingTabDownload" href="#">ファイル保存</a>
+      </li>
+      <li class="nav-item js-enabled-stream d-none">
+        <a class="nav-link js-menutab" data-target-tab="settingTabStream" href="#">配信支援</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link js-menutab" data-target-tab="settingTabNg" href="#">NG管理</a>
+      </li>
+    </ul>
+
+    <div id="settingTabBouyomi" class="js-tabblock">
+      <h3>棒読みちゃん 連携設定</h3>
+
+      <div class="mb-4">
+        <label for="bouyomiPort" class="form-label">棒読みちゃん HTTPポート番号</label>
+        <input type="number" class="form-control savable" id="bouyomiPort" aria-describedby="basic-addon3 basic-addon4" min="0" max="65535" value="50080">
+        <div class="form-text">※デフォルト値 = 50080</div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          以下のテキストを検出したら自動で読み上げ開始
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label for="autoStartKeywordByTitle" class="form-label">スレタイトル（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoStartKeywordByTitle" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+          <div>
+            <label for="autoStartKeywordByBody" class="form-label">スレ本文（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoStartKeywordByBody" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="startText" class="form-label">読み上げ開始時テキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="startText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを開始します">
+      </div>
+      <div class="mb-4">
+        <label for="endText" class="form-label">読み上げ停止時テキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="endText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを停止します">
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="readSpoiler">
+        <label class="form-check-label" for="readSpoiler">スポイラーで伏せられた部分も読み上げる</label>
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="ignoreNewlines">
+        <label class="form-check-label" for="ignoreNewlines">改行を無視する</label>
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="ignoreKita">
+        <label class="form-check-label" for="ignoreKita">ｷﾀｰを無視する</label>
+      </div>
+
+      <div class="mb-4">
+        <label for="threadClosedText" class="form-label">スレ落ち時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="threadClosedText" aria-describedby="basic-addon3 basic-addon4" value="スレッドが落ちました">
+      </div>
+    </div>
+
+    <div id="settingTabDownload" class="js-tabblock d-none">
+      <h3>ファイル保存設定</h3>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          以下のテキストを検出したら自動保存を開始
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label for="autoSaveKeywordByTitle" class="form-label">スレタイトル（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoSaveKeywordByTitle" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+          <div>
+            <label for="autoSaveKeywordByBody" class="form-label">スレ本文（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoSaveKeywordByBody" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <label for="fileSavePath" class="form-label">画像ファイル保存先</label>
+        <div class="col-4 mr-0 pr-0 text-end">
+          <input type="text" readonly class="form-control-plaintext mr-0 pr-0 text-end" value="mebuki_auto_save/">
+        </div>
+        <div class="col-auto">
+          <input type="text" class="form-control savable" id="fileSavePath" aria-describedby="basic-addon3 basic-addon4" value="files/${thread_id}">
+        </div>
+        <div class="form-text">※ブラウザで指定したダウンロードフォルダの中に保存されます</div>
+      </div>
+
+      <div class="mb-4">
+        <div><label class="form-label">自動保存するファイルを選択する</label></div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input savable" type="checkbox" id="saveJpg" value="option1">
+          <label class="form-check-label" for="saveJpg">.jpg .jpeg</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input savable" type="checkbox" id="saveGif" value="option2">
+          <label class="form-check-label" for="saveGif">.gif</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input savable" type="checkbox" id="savePng" value="option3">
+          <label class="form-check-label" for="savePng">.png</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input savable" type="checkbox" id="saveWebp" value="option3">
+          <label class="form-check-label" for="saveWebp">.webp</label>
+        </div>
+      </div>
+
+      <div class="form-check form-check-inline mb-4">
+        <input class="form-check-input savable" type="checkbox" id="saveSpoilerImages" value="option3">
+        <label class="form-check-label" for="saveSpoilerImages">スポイラー対象の画像も保存する</label>
+        <div class="form-text">※ONにすると画像のスポイラーが強制解除されます</div>
+      </div>
+
+      <h3>読み上げ連携</h3>
+      
+
+      <div class="mb-4">
+        <label for="fileSaveStartText" class="form-label">自動保存開始時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="fileSaveStartText" aria-describedby="basic-addon3 basic-addon4" value="ファイルの自動保存を開始します">
+      </div>
+      <div class="mb-4">
+        <label for="fileSaveEndText" class="form-label">自動保存停止時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="fileSaveEndText" aria-describedby="basic-addon3 basic-addon4" value="ファイルの自動保存を停止します">
+      </div>
+      <div class="mb-4">
+        <label for="fileSaveNotificationText" class="form-label">ファイル保存時に読み上げるテキスト （空白OK）</label>
+        <input type="text" class="form-control savable" id="fileSaveNotificationText" aria-describedby="basic-addon3 basic-addon4" value="ファイルを保存しました">
+      </div>
+    </div>
+
+    <div id="settingTabStream" class="js-tabblock d-none">
+      <h3>配信支援機能</h3>
+
+      <div class="form-check form-check-inline mb-4">
+        <input class="form-check-input savable" type="checkbox" id="saveThreadId" value="option3">
+        <label class="form-check-label" for="saveThreadId">スレッドIDをテキストファイルに保存する</label>
+        <div class="form-text">※直近で読み上げorわんコメ連携を有効にしたスレッド一件が対象です</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="oneCommeId" class="form-label">わんコメ連携先のID</label>
+        <input type="text" class="form-control savable" id="oneCommeId" aria-describedby="basic-addon3 basic-addon4">
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          以下のテキストを検出したら自動でわんコメ連携を開始
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label for="oneCommeAutoStartKeywordByTitle" class="form-label">スレタイトル（空白OK）</label>
+            <input type="text" class="form-control savable" id="oneCommeAutoStartKeywordByTitle" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+          <div>
+            <label for="oneCommeAutoStartKeywordByBody" class="form-label">スレ本文（空白OK）</label>
+            <input type="text" class="form-control savable" id="oneCommeAutoStartKeywordByBody" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="oneCommeStartText" class="form-label">わんコメ連携開始時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="oneCommeStartText" aria-describedby="basic-addon3 basic-addon4" value="わんコメ連携を開始します">
+      </div>
+      <div class="mb-4">
+        <label for="oneCommeEndText" class="form-label">わんコメ連携停止時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="oneCommeEndText" aria-describedby="basic-addon3 basic-addon4" value="わんコメ連携を開始します">
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" id="oneCommeReadSpoiler" value="option1">
+        <label class="form-check-label" for="oneCommeReadSpoiler">スポイラーで伏せられた部分もわんコメへ送る</label>
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" id="oneCommeIgnoreNewlines" value="option1">
+        <label class="form-check-label" for="oneCommeIgnoreNewlines">改行を無視する</label>
+      </div>
+      
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" id="oneCommeIgnoreKita" value="option1">
+        <label class="form-check-label" for="oneCommeIgnoreKita">ｷﾀｰを無視する</label>
+      </div>
+
+      <div class="mb-4">
+        <label for="oneCommeName" class="form-label">わんコメの発言者名に表示するテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="oneCommeName" aria-describedby="basic-addon3 basic-addon4" value="めぶっきー">
+      </div>
+
+      <div class="mb-4">
+        <label for="oneCommeThreadClosedText" class="form-label">スレ落ち時にわんコメへ送るテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="oneCommeThreadClosedText" aria-describedby="basic-addon3 basic-addon4" value="わんコメ連携を開始します">
+      </div>
+
+    </div>
+
+    <div id="settingTabNg"class="js-tabblock d-none">
+      <h3>NG設定</h3>
+
+      <div class="form-check form-check-inline mb-4">
+        <input class="form-check-input savable" type="checkbox" id="enableNgFilter" value="option3">
+        <label class="form-check-label" for="enableNgFilter">NGワードを含むレスは読み上げない</label>
+        <div class="form-text">※NGワードを含むレス自体を非表示にしたい場合は、めぶきのNG設定を利用してください</div>
+      </div>
+
+      <div class="form-group">
+        <a href="#" id="openNgOptions">NGワード管理画面を開く</a>
+        <small>※別タブで開きます</small>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+
+
+
+

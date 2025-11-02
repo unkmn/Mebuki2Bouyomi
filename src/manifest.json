@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Mebuki2Bouyomi Beta",
+  "version": "0.2.0",
+  "description": "めぶき☆ちゃんねるのスレッドに書き込まれたレスをHTTP連携で棒読みちゃんに読み上げさせます。",
+
+  "icons": {
+    "128": "images/icon.png"
+  },
+
+  "action": {
+    "default_popup": "popup.html"
+  },
+
+  "options_page": "ng_options.html",
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://mebuki.moe/*"],
+      "js": [
+        "constants.js",
+        "content.js"
+      ],
+      "css": ["content.css"]
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "downloads",
+    "tabs",
+    "notifications"
+  ],
+
+  "host_permissions": [
+    "http://127.0.0.1/"
+  ]
+}
+
+
