@@ -253,8 +253,6 @@ async function checkAutoStart() {
         speakTextInTab(currentSettings.fileSaveStartText);
       }
       if (isOneCommeActive) {
-        // わんコメ連携開始メッセージと同一メッセージIDにならないよう10ミリ秒待機する
-        await new Promise(r => setTimeout(r, 10));
         sendToOneCommeBySystem(currentSettings.fileSaveStartText);
       }
     }
@@ -274,7 +272,10 @@ const speakTextInTab = (text) => {
  */
 const sendToOneCommeBySystem = (text) => {
   if (!text) return;
-  sendToOneComme(STREAM_PARAMS.ONECOMME_EXTENTION_ID, STREAM_PARAMS.ONECOMME_EXTENTION_NAME, text);
+  // 現在日時を元にユニークなメッセージIDを生成
+  const date = new Date();
+  messageId = "mebuki_" + date.getFullYear().toString().padStart(4, '0') + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') + date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + date.getMilliseconds().toString().padStart(3, '0');
+  sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_EXTENTION_ID, STREAM_PARAMS.ONECOMME_EXTENTION_NAME, text);
 }
 
 /**
@@ -414,16 +415,12 @@ async function sendToBouyomi(text) {
 /**
  * わんコメにHTTPリクエストを送信
  */
-async function sendToOneComme(userId, name, text) {
+async function sendToOneComme(messageId, userId, name, text) {
   // わんコメ連携先IDを取得
   const oneCommeId = currentSettings.oneCommeId;
 
   if (!oneCommeId || oneCommeId.trim() === "") return;
   if (!text || text.trim() === "") return;
-
-  // 現在日時を元にユニークなメッセージIDを生成
-  const date = new Date();
-  const messageId = "mebuki_" + date.getFullYear().toString().padStart(4, '0') + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') + date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + date.getMilliseconds().toString().padStart(3, '0');
 
   try {
     // わんコメへPOSTリクエストを実施
@@ -457,7 +454,9 @@ async function sendToOneComme(userId, name, text) {
       return false;
     });
 
-    //正常終了
+    //正常終了の場合、連続でわんコメに送る際の安定性のため100ミリ秒待機する
+    await new Promise(r => setTimeout(r, 100));
+
     return true;
   } catch (error) {
     // 異常終了
@@ -666,14 +665,8 @@ async function handleDomChanges(mutationsList) {
       mutation.addedNodes.forEach(async node => {
         if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.RES_BLOCK)) {
           processNewMessage(node);
-          nodeLength  = nodeLength - 1;
-          if (nodeLength > 1) {
-            // 複数レスを一括受信したときに順次読み上げられるように待機時間を300ミリ秒設ける
-            await new Promise(r => setTimeout(r, 300));
-          }
         }
       });
-      await new Promise(r => setTimeout(r, 100));
     }
   }
 }
@@ -764,6 +757,10 @@ async function processReading(messageElement, oneCommeNotSend=false) {
 
   // 引用ブロックを削除
   processingElement.querySelectorAll('blockquote').forEach(bq => bq.remove());
+  // インラインコードを削除
+  processingElement.querySelectorAll('code').forEach(code => code.remove());
+  // コードブロックを削除
+  processingElement.querySelectorAll('pre').forEach(pre => pre.remove());
 
   // 本文中にリンクが含まれる場合
   if (processingElement.querySelector('a')) {
@@ -861,12 +858,14 @@ async function processReading(messageElement, oneCommeNotSend=false) {
         br.parentNode.replaceChild(document.createTextNode(' '), br);
       });
     } else {
-      // 改行が有効な場合、<br>を特殊文字に置換してtextContentを取得
+      // 改行が有効な場合、<br>を特殊文字に置換する
+      // ※改行部分で読み上げを区切るように半角スペースを付与する
       oneCommeElement.querySelectorAll('br').forEach(br => {
-        br.parentNode.replaceChild(document.createTextNode(STREAM_PARAMS.ONECOMME_REPLACE_BR_TEXT), br);
+        br.parentNode.replaceChild(document.createTextNode(' ' + STREAM_PARAMS.ONECOMME_REPLACE_BR_TEXT), br);
       });
     }
 
+    // textContentで文字列としてレス内容を取得
     let text = oneCommeElement.textContent;
 
     // レス本文内にカスタム文字列が存在している場合、特殊文字から<img>タグに置換する
@@ -888,20 +887,21 @@ async function processReading(messageElement, oneCommeNotSend=false) {
     text = text.trim().replace(/\s+/g, ' ');
 
     if (text) {
+      // スレID＋レス番号でメッセージIDを作る
+      const threadIdMatch = window.location.href.match(/app\/t\/([^\/?]+)/);  //URLを "/app/" で分割して配列に格納する
+      const threadId = threadIdMatch ? threadIdMatch[1] : 'unknown_thread'; //スレID
+      const resNumber = messageElement.querySelector(".text-destructive").textContent;  // レス番号
+      const messageId = threadId + "_" + resNumber; // スレID＋"_"＋レス番号 でメッセージIDを生成
       // わんコメへ転送
-      sendToOneComme(STREAM_PARAMS.ONECOMME_USER_ID, currentSettings.oneCommeName, text);
+      sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_USER_ID, currentSettings.oneCommeName, text);
     }
-
-  }
-  
+  } 
 }
 
 /**
  * 新しいレスを検知した場合の処理
  */
 async function processNewMessage(messageElement) {
-
-
     const { downloadCount, imageFlag } = await handleFileSaving(messageElement, false);
 
     // 棒読みちゃん連携が有効の場合
@@ -920,11 +920,9 @@ async function processNewMessage(messageElement) {
     if (isOneCommeActive) {
       if (imageFlag) {
         sendToOneCommeBySystem("(画像が投稿されました)");
-        await new Promise(r => setTimeout(r, 100));
       }
       if (downloadCount > 0) {
         sendToOneCommeBySystem(currentSettings.fileSaveNotificationText);
-        await new Promise(r => setTimeout(r, 100));
       }
     }
 

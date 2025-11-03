@@ -72,7 +72,7 @@ const STREAM_PARAMS = {
   ONECOMME_REPLACE_IMG_TEXT: "${{oneCommeImg}}",
   ONECOMME_REPLACE_BR_TEXT: "${{oneCommeBr}}",
   ONECOMME_URL: "http://localhost:11180/api/comments",  // わんコメPOSTリクエスト送信先
-  ONECOMME_PROFILE_IMAGE: "https://tayori.com/faq/dac36c122186b7a1508e04d73d6b3c0d91d656c7/img-acquisition/?file_hash=919b2a72b90e970aa11a1c33deb3051183699446.png&type=design" // 発言者アイコン
+  ONECOMME_PROFILE_IMAGE: "https://raw.githubusercontent.com/unkmn/Mebuki2Bouyomi/refs/heads/main/src/images/mebuki.png" // 発言者アイコン
 }
 
 
