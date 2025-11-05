@@ -2,6 +2,8 @@ body {
   width: 500px;
   font-family: sans-serif;
   font-size: 14px;
+  background-color: #feffef;
+  color: #800000;
 }
 
 fieldset {
@@ -10,9 +12,28 @@ fieldset {
   margin-bottom: 15px;
 }
 
-legend {
-  font-weight: bold;
-  padding: 0 5px;
+legend.category-title {
+  font-size: 1rem;
+  width:inherit;
+  padding:0 10px;
+  margin-top: -22px;
+  border-bottom:none;
+}
+
+.text-color-mebuki {
+  color: #800000;
+}
+
+.bg-head-thread {
+  background-color: #F0E0D6;
+}
+
+.bg-head-bouyomi {
+  background-color: #ddddff;
+}
+
+.bg-head-stream {
+  background-color: #feedd0;
 }
 
 .form-group {

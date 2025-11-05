@@ -4,14 +4,22 @@
 let currentSettings = {}; // ローカル保存設定 (共有)
 
 //  以下はタブごとの状態
+let isNotification = false; // 新着通知有効フラグ
 let isReadingActive = false; // 読み上げ実行中フラグ
 let tabReadingStartPosition = TAB_STATE_DEFAULT.readingStartPosition; // 開始位置 ("0")
 let tabStartReadingResNumber = TAB_STATE_DEFAULT.startReadingResNumber; // 指定レス番号 ("")
 let isFileSaveActive = false; // ファイル保存有効フラグ
 let isOneCommeActive = false; // わんコメ連携有効フラグ
+let currentTab = DEFAULT_TAB_TARGET_BLOCK; // 選択中の設定タブ
+
+// エラーフラグ
+let isReadingErrorFlag = false; // 棒読みちゃん連携失敗処理中フラグ
+let isOneCommeErrorFlag = false; // わんコメ連携失敗処理中フラグ
 
 let messageObserver = null; // レス監視用
 let threadStatusObserver = null; // スレ落ち監視用
+let titleObserver = null; // スレタイ監視用
+let currentObservedUrl = ""; // 監視中のスレタイ
 let isProcessingInitialRead = false; // 初回読み上げ処理中フラグ
 let ngWordsList = []; // NGワードリスト
 const bouyomiBaseUrl = "http://localhost:";
@@ -53,7 +61,7 @@ async function waitForElement(selector, root = document, timeout = 5000) {
 (async () => {
   await loadSettings();
   const currentUrl = window.location.href;
-  if (currentUrl.startsWith(URL_PARAM.MEBUKI_THREAD)) {
+  if (currentUrl.startsWith(URL_PARAM.MEBUKI_PARENT)) {
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', async () => {
         await initializeThreadPage();
@@ -68,12 +76,52 @@ async function waitForElement(selector, root = document, timeout = 5000) {
  * スレッドページ専用の初期化
  */
 async function initializeThreadPage() {
-  //insertControlUI();
-  await checkAutoStart();
+  const currentUrl = window.location.href;
+  // スレッドページの時のみ実行する初期化処理
+  if (currentUrl.startsWith(URL_PARAM.MEBUKI_THREAD)) {
+    //insertControlUI();
+    // 自動連携開始処理
+    await checkAutoStart();
+  }
+  // ページタイトルの監視を開始
+  await startTitleObserver(); 
 }
 
 /**
- * 1. 設定をストレージから読み込む (ローカル保存分のみ)
+ * （URL変化検知時）状態をリセットし、UIを再挿入し、自動開始を再チェックする
+ */
+async function reInitialize() {
+    // 1. 状態をリセット
+    isNotification = false;
+    isReadingActive = false;
+    isFileSaveActive = false;
+    tabReadingStartPosition = TAB_STATE_DEFAULT.readingStartPosition;
+    tabStartReadingResNumber = TAB_STATE_DEFAULT.startReadingResNumber;
+    isProcessingInitialRead = false;
+    isOneCommeActive = false;
+    currentTab = DEFAULT_TAB_TARGET_BLOCK;
+    currentObservedUrl = "";
+    
+    // 2. 監視を停止
+    if (messageObserver) messageObserver.disconnect();
+    if (threadStatusObserver) threadStatusObserver.disconnect();
+    if (titleObserver) titleObserver.disconnect();
+    messageObserver = null;
+    threadStatusObserver = null;
+    titleObserver = null;
+    
+    // 3. 既存のUIを削除
+    if (controlPanel) {
+        controlPanel.remove();
+        controlPanel = null;
+    }
+    
+    // 4. UIを再挿入し、自動開始を再チェック
+    await initializeThreadPage();
+}
+
+/**
+ * 設定をストレージから読み込む (ローカル保存分のみ)
  */
 async function loadSettings() {
   currentSettings = await chrome.storage.local.get(SETTINGS_PARAMS.DEFAULT);
@@ -89,6 +137,39 @@ async function loadSettings() {
       }
     }
   });
+}
+
+/**
+ * ページタイトル監視を開始する
+ */
+async function startTitleObserver() {
+  if (titleObserver) return; // 既に監視中
+  
+  // 現在のURLを初期値として保存
+  const titleElement = document.querySelector('title');
+  currentObservedUrl = window.location.href;
+  
+  titleObserver = new MutationObserver(handleTitleChanges);
+  
+  // ヘッダー内のDOMツリーの変更（要素の追加/削除、テキストの変更）を監視
+  titleObserver.observe(titleElement, {
+      subtree: true,
+      characterData: true
+  });
+}
+
+/**
+ * ページタイトル監視コールバック
+ */
+function handleTitleChanges(mutationsList) {
+  
+  const newUrl = window.location.href;
+  
+  // URLが変わった場合
+  if (newUrl !== currentObservedUrl) {
+      // reInitialize が呼ばれると、中で currentObservedUrl はリセットされる
+      reInitialize();
+  }
 }
 
 /**
@@ -154,7 +235,7 @@ async function getThreadBodyElement() {
     }
     return firstMessage.querySelector(SELECTORS.RES_CONTENT);
   } catch (error) {
-    console.warn("Error waiting for thread body:", error);
+    console.warn("スレッド本文の取得に失敗しました:", error);
     return null;
   }
 }
@@ -222,6 +303,7 @@ async function checkAutoStart() {
       updateMonitoringState(); 
       // ローカル保存の readingStartPosition を使う
       startReading(currentSettings.readingStartPosition, null);
+      await new Promise(r => setTimeout(r, 10));
     }
   }
 
@@ -233,7 +315,8 @@ async function checkAutoStart() {
         isOneCommeActive = true;
         updateMonitoringState();
         // ローカル保存の oneCommeStartText を使う
-        sendToOneCommeBySystem(currentSettings.oneCommeStartText);
+        await sendToOneCommeBySystem(currentSettings.oneCommeStartText);
+        await new Promise(r => setTimeout(r, 10));
       }
     }
   }
@@ -250,40 +333,78 @@ async function checkAutoStart() {
       isFileSaveActive = true;
       updateMonitoringState(); 
       if (isReadingActive) {
-        speakTextInTab(currentSettings.fileSaveStartText);
+        await sendToBouyomiWrapper(currentSettings.fileSaveStartText);
       }
       if (isOneCommeActive) {
-        sendToOneCommeBySystem(currentSettings.fileSaveStartText);
+        await sendToOneCommeBySystem(currentSettings.fileSaveStartText);
       }
     }
   }
 }
 
 /**
- * popup.js からの読み上げリクエストを処理
+ * 棒読みちゃんへの転送ラッパー関数
  */
-const speakTextInTab = (text) => {
+const sendToBouyomiWrapper = async (text, compSpeakFlag = false) => {
   if (!text) return;
-  sendToBouyomi(text);
+  if (!isReadingActive && !compSpeakFlag) return;
+  
+  const sendResult = await sendToBouyomi(text);
+
+  // 連携が失敗した場合
+  if (!sendResult) {
+    if (!isReadingErrorFlag) {
+      isReadingErrorFlag = true;
+
+      // 棒読みちゃんへリクエストできなかった場合は連携を停止
+      isReadingActive = false;
+      // 監視状態の更新
+      updateMonitoringState();
+      
+      alert(SEND_FAILED_MESSAGES.BOUYOMI);
+    }
+    isReadingErrorFlag = false;
+
+    // 連携失敗時
+    return false;
+  }
+
+  // 連携成功時
+  return true;
 };
 
 /**
  * システムによるわんコメへのメッセージ転送
  */
-const sendToOneCommeBySystem = (text) => {
+const sendToOneCommeBySystem = async (text) => {
   if (!text) return;
   // 現在日時を元にユニークなメッセージIDを生成
   const date = new Date();
-  messageId = "mebuki_" + date.getFullYear().toString().padStart(4, '0') + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') + date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + date.getMilliseconds().toString().padStart(3, '0');
-  sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_EXTENTION_ID, STREAM_PARAMS.ONECOMME_EXTENTION_NAME, text);
+  messageId = "mebuki_" + date.getFullYear().toString().padStart(4, '0') + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') + date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + date.getSeconds().toString().padStart(2, '0') + date.getMilliseconds().toString().padStart(3, '0');
+
+  const sendResult = await sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_EXTENTION_ID, STREAM_PARAMS.ONECOMME_EXTENTION_NAME, text)
+
+  if (!sendResult) {
+    if (!isOneCommeErrorFlag) {
+      isOneCommeErrorFlag = true;
+
+      // わんコメへリクエストできなかった場合は連携を停止
+      isOneCommeActive = false;
+      // 監視状態の更新
+      updateMonitoringState();
+      
+      alert(SEND_FAILED_MESSAGES.ONECOMME);
+    }
+    isOneCommeErrorFlag = false;
+  }
 }
 
 /**
  * popup.js からわんコメ連携リクエストを処理
  */
-const sendOneCommeInTab = (text) => {
+const sendOneCommeInTab = async (text) => {
   if (!text) return;
-  sendToOneCommeBySystem(text);
+  await sendToOneCommeBySystem(text);
 }
 
 /**
@@ -291,6 +412,11 @@ const sendOneCommeInTab = (text) => {
  */
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   switch (message.type) {
+    case 'SET_NOTIFICATION_STATE':
+      isNotification = message.payload.enabled;
+      updateMonitoringState();
+      break;
+
     case 'SET_READING_STATE':
       const wasReading = isReadingActive;
       isReadingActive = message.payload.enabled;
@@ -341,9 +467,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         saveThreadIdIfNeeded();
       }
       break;
+    
+    case 'CURRENT_TAB_STATE':
+      currentTab = message.payload.currentTab;
+      break;
+      
 
     case 'SPEAK_TEXT': // popup.jsからの読み上げ指示
-      speakTextInTab(message.text);
+      await sendToBouyomiWrapper(message.text);
       break;
   
     case 'SEND_ONECOMME': // popup.jsからのわんコメ送信リクエスト
@@ -353,11 +484,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     case 'GET_CURRENT_STATE':
       // タブごとの状態を返す
       sendResponse({
+        isNotification: isNotification,
         isReadingActive: isReadingActive,
         readingStartPosition: tabReadingStartPosition,
         startReadingResNumber: tabStartReadingResNumber,
         isFileSaveActive: isFileSaveActive,
-        isOneCommeActive: isOneCommeActive
+        isOneCommeActive: isOneCommeActive,
+        currentTab: currentTab,
       });
       break;
       
@@ -388,11 +521,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       
       chrome.runtime.sendMessage({ 
         type: 'SHOW_NOTIFICATION', 
+        title: APP_NAME,
         message: `${MESSAGES.SUCCESS.ALL_IMG_DL}${totalDownloadCount}` 
       });
       
       chrome.runtime.sendMessage({ type: 'DOWNLOAD_ALL_COMPLETE' });
       break;
+    
   }
   return true;
 });
@@ -408,8 +543,10 @@ async function sendToBouyomi(text) {
   try {
     await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch (error) {
-    console.warn("Bouyomi-chan request failed.", error);
+    return false;
   }
+
+  return true;
 }
 
 /**
@@ -445,30 +582,25 @@ async function sendToOneComme(messageId, userId, name, text) {
     .then(response => {
         if (!response.ok) {
             // 異常終了
-            console.error("Bouyomi-chan request failed. " + response.statusText);
             return false;
         }
-    })
-    .catch(error => {
-      console.warn("One-Comme request failed.", error);
-      return false;
     });
 
-    //正常終了の場合、連続でわんコメに送る際の安定性のため100ミリ秒待機する
-    await new Promise(r => setTimeout(r, 100));
-
-    return true;
   } catch (error) {
     // 異常終了
-    console.warn("One-Comme request failed.", error);
     return false;
   }
+
+  return true;
 }
 
 /**
  * スレッドID保存処理
  */
 function saveThreadIdIfNeeded() {
+  // 配信支援機能が無効の場合は処理を終了
+  if (!currentSettings.enableStream) return;
+
   if (currentSettings.saveThreadId) {
     const threadIdMatch = window.location.href.match(/app\/t\/([^\/?]+)/);
     if (threadIdMatch && threadIdMatch[1]) {
@@ -497,7 +629,7 @@ function saveThreadIdIfNeeded() {
  * 監視ONの場合、めぶきの「自動更新」をONにして非表示にする
  */
 function updateMonitoringState() {
-  const shouldBeMonitoring = isReadingActive || isFileSaveActive || isOneCommeActive;
+  const shouldBeMonitoring = isNotification || isReadingActive || isFileSaveActive || isOneCommeActive;
   const autoReloadButton = document.getElementById('auto-reload');
   const autoReloadLabel = document.querySelector('label[for="auto-reload"]');
 
@@ -560,9 +692,10 @@ async function startReading(startPosition, startResNumber) {
     isReadingActive = true;
   }
 
-  sendToBouyomi(currentSettings.startText);
-  updateControlUI(true);
+  const sendResult = await sendToBouyomiWrapper(currentSettings.startText);
+  if (!sendResult) return;
   updateMonitoringState();
+  updateControlUI(true);
   
   // --- 開始位置に応じた初回読み上げ ---
   if (startPosition === "1" || startPosition === "2") {
@@ -600,11 +733,12 @@ async function startReading(startPosition, startResNumber) {
 /**
  * 読み上げ停止（内部処理）
  */
-function stopReadingInternal() {
+async function stopReadingInternal() {
   if (isReadingActive) return;
+  await sendToBouyomiWrapper(currentSettings.endText, true);
+
   isReadingActive = false;
-  
-  sendToBouyomi(currentSettings.endText);
+
   updateControlUI(false);
   updateMonitoringState();
 }
@@ -633,7 +767,7 @@ function handleThreadStatusChanges(mutationsList) {
         }
 
         if (targetElement && targetElement.textContent.includes(MESSAGES.THREAD_CLOSED_TEXT)) {
-          sendToBouyomi(currentSettings.threadClosedText);
+          sendToBouyomiWrapper(currentSettings.threadClosedText);
           
           isReadingActive = false;
           isFileSaveActive = false;
@@ -657,17 +791,22 @@ function handleThreadStatusChanges(mutationsList) {
  */
 async function handleDomChanges(mutationsList) {
   if (isProcessingInitialRead) return;
-  if (!(isReadingActive || isFileSaveActive || isOneCommeActive)) return;
+  if (!(isNotification || isReadingActive || isFileSaveActive || isOneCommeActive)) return;
 
   for (const mutation of mutationsList) {
     if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
       let nodeLength = mutation.addedNodes.length;
       mutation.addedNodes.forEach(async node => {
         if (node.nodeType === Node.ELEMENT_NODE && node.matches(SELECTORS.RES_BLOCK)) {
-          processNewMessage(node);
+          await processNewMessage(node);
+          nodeLength = nodeLength - 1;
+          if (nodeLength > 1) {
+            await new Promise(r => setTimeout(r, 10));
+          }
         }
       });
     }
+    await new Promise(r => setTimeout(r, 10));
   }
 }
 
@@ -811,7 +950,7 @@ async function processReading(messageElement, oneCommeNotSend=false) {
 
       if (text) {
         //棒読みちゃんへ転送
-        sendToBouyomi(text);
+        await sendToBouyomiWrapper(text);
       }
 
     } else {
@@ -830,7 +969,7 @@ async function processReading(messageElement, oneCommeNotSend=false) {
 
         if (text) {
           //棒読みちゃんへ
-          sendToBouyomi(text);
+          await sendToBouyomiWrapper(text);
         }
       }
     }
@@ -893,9 +1032,110 @@ async function processReading(messageElement, oneCommeNotSend=false) {
       const resNumber = messageElement.querySelector(".text-destructive").textContent;  // レス番号
       const messageId = threadId + "_" + resNumber; // スレID＋"_"＋レス番号 でメッセージIDを生成
       // わんコメへ転送
-      sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_USER_ID, currentSettings.oneCommeName, text);
+      const sendResult = await sendToOneComme(messageId, STREAM_PARAMS.ONECOMME_USER_ID, currentSettings.oneCommeName, text);
+      if (sendResult) {
+        // 連続でレスを送信する時に処理を安定させるため待機時間を空ける
+        await new Promise(r => setTimeout(r, 50));
+      } else {
+        if (!isOneCommeErrorFlag) {
+          isOneCommeErrorFlag = true;
+
+          // わんコメへリクエストできなかった場合は連携を停止
+          isOneCommeActive = false;
+          // 監視状態の更新
+          updateMonitoringState();
+          
+          alert(SEND_FAILED_MESSAGES.ONECOMME);
+        }
+        isOneCommeErrorFlag = false;
+      }
+      
     }
   } 
+}
+
+/**
+ * レス更新検知時 通知処理
+ */
+async function processNotification(messageElement, downloadText) {
+  if (!isNotification) return;
+
+  // スレタイの取得
+  const threadHeader = document.querySelector(SELECTORS.THREAD_HEADER_ROOT);
+  const threadTitleElement = threadHeader.querySelector(SELECTORS.THREAD_TITLE);
+  if (!threadTitleElement) return;
+  const threadTitle = threadTitleElement.textContent;
+
+  // レス本文のDOM要素
+  const contentElement = messageElement.querySelector(SELECTORS.RES_CONTENT);
+  if (!contentElement) return;
+
+  // element取得
+  const processingElement = contentElement.cloneNode(true);
+
+  processingElement.innerHTML = processingElement.innerHTML.replace(/&ZeroWidthSpace;/g, '');
+  
+  // NGフィルター有効の場合
+  if (currentSettings.enableNgFilter) {
+    const plainText = processingElement.textContent;
+    // NGワードが含まれている場合は処理を中断する
+    if (checkForNgWords(plainText)) {
+      return; 
+    }
+  }
+
+  // 引用ブロックを削除
+  processingElement.querySelectorAll('blockquote').forEach(bq => bq.remove());
+  // インラインコードを削除
+  processingElement.querySelectorAll('code').forEach(code => code.remove());
+  // コードブロックを削除
+  processingElement.querySelectorAll('pre').forEach(pre => pre.remove());
+
+  // 本文中にリンクが含まれる場合
+  if (processingElement.querySelector('a')) {
+    // プレビュー枠を除去
+    processingElement.querySelectorAll(SELECTORS.URL_PREVIEW).forEach(preview => preview.remove());
+    // URLを置換
+    processingElement.querySelectorAll('a').forEach(a => {
+      const linkText = a.textContent || "";
+      if (linkText.startsWith("https://") || linkText.startsWith("http://")) {
+        a.replaceWith(document.createTextNode(' (URL省略) '));
+      }
+    });
+  }
+
+  // カスタム絵文字処理
+  // <img>タグをaltプロパティ値に置換する
+  processingElement.querySelectorAll(SELECTORS.CUSTOM_EMOJI).forEach(img => {
+    img.parentElement.replaceWith(document.createTextNode(img.alt));
+  });
+
+  // <br>タグを改行コードに置換
+  processingElement.querySelectorAll('br').forEach(br => {
+    br.parentNode.replaceChild(document.createTextNode('\n'), br);
+  });
+
+  // textContentで文字列としてレス内容を取得
+  let text = processingElement.textContent;
+   
+  // ｷﾀｰを読み上げない
+  text = text.replace(/ｷﾀ━━━━━━\(ﾟ∀ﾟ\)━━━━━━ !!!!!/g, '');
+  text = text.trim().replace(/\s+/g, ' ');
+
+  // 画像に関するテキストがある場合は結合
+  if (downloadText) {
+    text = downloadText + "\n" + text;
+  }
+
+  if (text) {
+    console.log("processNotification text=" + text);
+    // background.js の通知処理へ送る
+    chrome.runtime.sendMessage({ 
+      type: 'SHOW_NOTIFICATION', 
+      title: threadTitle,
+      message: text
+    });
+  }
 }
 
 /**
@@ -907,28 +1147,38 @@ async function processNewMessage(messageElement) {
     // 棒読みちゃん連携が有効の場合
     if (isReadingActive) {
       if (imageFlag) {
-        sendToBouyomi("(画像が投稿されました)");
-        await new Promise(r => setTimeout(r, 100));
+        await sendToBouyomiWrapper(MESSAGES.SUCCESS.IMG_DOWNLOADED);
       }
       if (downloadCount > 0) {
-        sendToBouyomi(currentSettings.fileSaveNotificationText);
-        await new Promise(r => setTimeout(r, 100));
+        await sendToBouyomiWrapper(currentSettings.fileSaveNotificationText);
       }
     }
 
     // わんコメ連携が有効の場合
     if (isOneCommeActive) {
       if (imageFlag) {
-        sendToOneCommeBySystem("(画像が投稿されました)");
+        await sendToOneCommeBySystem(MESSAGES.SUCCESS.IMG_DOWNLOADED);
       }
       if (downloadCount > 0) {
-        sendToOneCommeBySystem(currentSettings.fileSaveNotificationText);
+        await sendToOneCommeBySystem(currentSettings.fileSaveNotificationText);
       }
     }
 
     if (isReadingActive || isOneCommeActive) {
       // 読み上げ処理
       await processReading(messageElement);
+    }
+
+    // 新着レス通知
+    if (isNotification) {
+      let downloadText = "";
+      if (imageFlag) {
+        downloadText = MESSAGES.SUCCESS.IMG_DOWNLOADED;
+      }
+      if (downloadCount > 0) {
+        downloadText = currentSettings.fileSaveNotificationText;
+      }
+      await processNotification(messageElement, downloadText);
     }
 
 } 

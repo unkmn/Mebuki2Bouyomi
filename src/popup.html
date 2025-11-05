@@ -15,12 +15,34 @@
 
   <div class="container-fluid">
 
-    <div class="row sticky-top bg-white border-bottom">
+    <div class="row sticky-top bg-head-thread border-bottom">
       <h1 class="p-2">Mebuki2Bouyomi Beta</h1>
     </div>
 
-    <div class="mb-4">
-      <div class="form-check form-switch mt-4 mb-2">
+    <fieldset class="p-2 mt-4 mb-2">
+      <legend class="category-title bg-head-thread">スレ閲覧支援</legend>
+
+      <div class="form-check form-switch my-3">
+        <input class="form-check-input" type="checkbox" role="switch" id="enableNotification">
+        <label class="form-check-label" for="enableNotification">新着レスを通知する</label>
+      </div>
+
+      <div class="form-check form-switch my-3">
+        <input class="form-check-input" type="checkbox" role="switch" id="enableFileSave">
+        <label class="form-check-label" for="enableFileSave">新着レスの画像を自動保存する</label>
+      </div>
+
+      <div class="d-grid gap-2 mb-3">
+        <button type="button" class="btn btn-outline-primary" id="downloadAllImages">表示中のスレッド内の画像を全てDLする</button>
+      </div>
+    </fieldset>
+
+    <div>&nbsp;</div>
+
+    <fieldset class="p-2 my-2">
+      <legend class="category-title bg-head-bouyomi">棒読みちゃん</legend>
+
+      <div class="form-check form-switch mt-3 mb-2">
         <input class="form-check-input" type="checkbox" role="switch" id="enableReading">
         <label class="form-check-label" for="enableReading">棒読みちゃんでの読み上げを有効にする</label>
         <div class="form-text">※読み上げには棒読みちゃんを起動しておく必要があります</div>
@@ -46,32 +68,23 @@
           <input type="number" class="form-control" id="startReadingResNumber" aria-describedby="basic-addon3 basic-addon4" min="1" max="1000">
         </div>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="mb-4">
-      <div class="form-check form-switch mb-2">
-        <input class="form-check-input" type="checkbox" role="switch" id="enableFileSave">
-        <label class="form-check-label" for="enableFileSave">新着レスの画像を自動保存する</label>
+    <div>&nbsp;</div>
+
+    <fieldset class="p-2 my-2">
+      <legend class="category-title bg-head-stream">配信支援機能</legend>
+
+      <div class="form-check form-switch my-3">
+        <input class="form-check-input savable" type="checkbox" role="switch" id="enableStream">
+        <label class="form-check-label" for="enableStream">配信支援機能を利用する</label>
       </div>
 
-      <div class="d-grid gap-2">
-        <button type="button" class="btn btn-secondary" id="downloadAllImages">表示中のスレッド内の画像を全てDLする</button>
-      </div>
-    </div>
-
-    <div class="js-enabled-stream d-none">
-      <div class="form-check form-switch mb-2">
+      <div class="form-check form-switch mb-3 js-enabled-stream d-none">
         <input class="form-check-input" type="checkbox" role="switch" id="enableOneComme">
         <label class="form-check-label" for="enableOneComme">わんコメ連携を有効にする</label>
       </div>
-    </div>
-
-    <hr>
-
-    <div class="form-check form-switch">
-      <input class="form-check-input savable" type="checkbox" role="switch" id="enableStream">
-      <label class="form-check-label" for="enableStream">配信支援機能を利用する</label>
-    </div>
+    </fieldset>
 
     <hr>
 
@@ -79,13 +92,13 @@
 
     <ul class="nav nav-tabs my-2">
       <li class="nav-item">
-        <a class="nav-link active js-menutab" data-target-tab="settingTabBouyomi" aria-current="page" href="#">棒読みちゃん</a>
+        <a class="nav-link active js-menutab bg-head-thread" data-target-tab="settingTabDownload" href="#">ファイル保存</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link js-menutab" data-target-tab="settingTabDownload" href="#">ファイル保存</a>
+        <a class="nav-link js-menutab bg-head-bouyomi" data-target-tab="settingTabBouyomi" aria-current="page" href="#">棒読みちゃん</a>
       </li>
       <li class="nav-item js-enabled-stream d-none">
-        <a class="nav-link js-menutab" data-target-tab="settingTabStream" href="#">配信支援</a>
+        <a class="nav-link js-menutab bg-head-stream" data-target-tab="settingTabStream" href="#">配信支援</a>
       </li>
       <li class="nav-item">
         <a class="nav-link js-menutab" data-target-tab="settingTabNg" href="#">NG管理</a>
@@ -106,7 +119,7 @@
       </div>
 
       <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-head-thread text-color-mebuki">
           以下のテキストを検出したら自動で読み上げ開始
         </div>
         <div class="card-body">
@@ -159,7 +172,7 @@
       </div>
 
       <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-head-thread text-color-mebuki">
           以下のテキストを検出したら自動保存を開始
         </div>
         <div class="card-body">
@@ -246,7 +259,7 @@
       </div>
 
       <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-head-thread text-color-mebuki">
           以下のテキストを検出したら自動でわんコメ連携を開始
         </div>
         <div class="card-body">

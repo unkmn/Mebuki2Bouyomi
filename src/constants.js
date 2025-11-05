@@ -1,5 +1,7 @@
 // constants.js
 
+const APP_NAME = "Mebuki2Bouyomi";
+
 // 設定画面のデフォルト値
 const SETTINGS_PARAMS = {
   // ポート番号のデフォルト
@@ -55,12 +57,16 @@ const SETTINGS_PARAMS = {
   }
 };
 
+// デフォルト表示タブ
+const DEFAULT_TAB_TARGET_BLOCK = "settingTabDownload";
+
 // タブごとの状態のデフォルト値
 const TAB_STATE_DEFAULT = {
   readingStartPosition: "0", // "以降の新着レスのみ"
   startReadingResNumber: "" // 指定レス番号
 };
 
+// ファイル保存先 親ディレクトリパス（固定）
 const DIR_AUTO_SAVE = "mebuki_auto_save/";
 
 // 配信支援機能関連
@@ -75,16 +81,22 @@ const STREAM_PARAMS = {
   ONECOMME_PROFILE_IMAGE: "https://raw.githubusercontent.com/unkmn/Mebuki2Bouyomi/refs/heads/main/src/images/mebuki.png" // 発言者アイコン
 }
 
-
 // URL関連
 const URL_PARAM = {
-  MEBUKI_PARENT: "https://mebuki.moe/*",
+  MEBUKI_PARENT: "https://mebuki.moe/",
   MEBUKI_THREAD: "https://mebuki.moe/app/t/"
 };
+
+// 連携失敗時エラーメッセージ
+const SEND_FAILED_MESSAGES = {
+  BOUYOMI: "【Mebuki2Bouyomi - エラー】\n棒読みちゃんとの連携に失敗しました。",
+  ONECOMME: "【Mebuki2Bouyomi - エラー】\nわんコメとの連携に失敗しました。",
+}
 
 // セレクタ
 const SELECTORS = {
   // スレッド/レス
+  PAGE_HEADER_ROOT: 'header.pt-safe', //ページヘッダー
   THREAD_HEADER_ROOT: 'main[data-slot="sidebar-inset"] header', // スレタイ検索の起点
   THREAD_TITLE: 'div.line-clamp-1', // スレタイ (THREAD_HEADER_ROOT の中で探す)
   THREAD_MESSAGES: 'div.thread-messages',
@@ -120,7 +132,8 @@ const MESSAGES = {
   },
   SUCCESS: {
     COMPLETE: "処理が完了しました。",
-    ALL_IMG_DL: "スレ内の画像保存が完了しました。保存件数 = "
+    ALL_IMG_DL: "スレ内の画像保存が完了しました。保存件数 = ",
+    IMG_DOWNLOADED: "(画像が投稿されました)"
   },
   THREAD_CLOSED_TEXT: "このスレはもう書き込みできません" // 検出する文字列
 };

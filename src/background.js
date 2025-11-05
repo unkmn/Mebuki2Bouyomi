@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: 'images/icon.png', // manifest.jsonで指定したアイコン
-      title: 'Mebuki2Bouyomi',
+      title: message.title,
       message: message.message || '処理が完了しました。'
     }, () => {
       if (chrome.runtime.lastError) {
@@ -33,4 +33,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
   }
 });
-

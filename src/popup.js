@@ -1,9 +1,10 @@
 // popup.js
 document.addEventListener('DOMContentLoaded', () => {
   // --- 要素の取得 ---
+  const enableNotification = document.getElementById('enableNotification');
+  const enableFileSave = document.getElementById('enableFileSave');
   const settingsToSave = document.querySelectorAll('.savable');
   const enableReading = document.getElementById('enableReading');
-  const enableFileSave = document.getElementById('enableFileSave');
   const enableOneComme = document.getElementById('enableOneComme');
   const bouyomiPort = document.getElementById('bouyomiPort');
   const openNgOptions = document.getElementById('openNgOptions');
@@ -40,6 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // わんコメ連携を停止
       enableOneComme.checked = false;
     }
+  }
+
+  const tabActiveate = (activeTabId) => {
+      // 一度すべてのタブからactiveを解除
+      menuTabs.forEach(taskTab => {
+        taskTab.classList.remove("active");
+      });
+      // クリック対象のタブをactiveにする
+      document.querySelector(`[data-target-tab="${activeTabId}"]`).classList.add("active");
+
+      // 対象ブロックのアクティブ化
+      document.getElementById(activeTabId).classList.remove("d-none");
+      // 対象以外のブロックを非表示
+      menuTabBlocks.forEach(tabBlock => {
+        if (tabBlock.id !== activeTabId) {
+          tabBlock.classList.add("d-none");
+        }
+      });
   }
 
   /**
@@ -150,11 +169,13 @@ document.addEventListener('DOMContentLoaded', () => {
           if (chrome.runtime.lastError) {
             console.warn("Could not sync state from content script:", chrome.runtime.lastError.message);
           } else if (response) {
+            enableNotification.checked = response.isNotification;
+            enableFileSave.checked = response.isFileSaveActive;
             enableReading.checked = response.isReadingActive;
             readingStartPosition.value = response.readingStartPosition;
             startReadingResNumber.value = response.startReadingResNumber;
-            enableFileSave.checked = response.isFileSaveActive;
             enableOneComme.checked = response.isOneCommeActive;
+            tabActiveate(response.currentTab);
             updateResNumberInputVisibility(readingStartPosition.value);
             
             // 棒読みちゃん連携中は開始位置設定を無効化
@@ -171,10 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       } else {
         // スレッドページ以外では無効化
+        enableNotification.disabled = true;
+        enableFileSave.disabled = true;
         enableReading.disabled = true;
         readingStartPosition.disabled = true;
         startReadingResNumber.disabled = true;
-        enableFileSave.disabled = true;
         downloadAllButton.disabled = true; 
         enableOneComme.disabled = true;
         oneCommeId.disabled = false;
@@ -240,7 +262,43 @@ document.addEventListener('DOMContentLoaded', () => {
     input.addEventListener(eventType, saveSetting);
   });
 
-  // 2. ローカルに保存しない設定 (タブへの送信)
+  // 画像の自動保存トグルスイッチchangeイベント
+  enableFileSave.addEventListener('change', (e) => {
+    const isEnabled = e.target.checked;
+    sendStateToTab('SET_FILESAVE_STATE', { enabled: isEnabled });
+
+    if (isEnabled) {
+      chrome.storage.local.get({ fileSaveStartText: SETTINGS_PARAMS.DEFAULT.fileSaveStartText }, (items) => {
+        // 棒読みちゃん連携が有効な時は開始メッセージを送信
+        if (enableReading.checked) {
+          speakTextInTab(items.fileSaveStartText);
+        }
+        // わんコメ連携が有効な時は開始メッセージを送信
+        if (enableOneComme.checked) {
+          sendOneCommeInTab(items.fileSaveStartText);
+        }
+      });
+    } else {
+      chrome.storage.local.get({ fileSaveEndText: SETTINGS_PARAMS.DEFAULT.fileSaveEndText }, (items) => {
+        // 棒読みちゃん連携が有効な時は停止メッセージを送信
+        if (enableReading.checked) {
+          speakTextInTab(items.fileSaveEndText);
+        }
+        // わんコメ連携が有効な時は停止メッセージを送信
+        if (enableOneComme.checked) {
+          sendOneCommeInTab(items.fileSaveEndText);
+        }
+      });
+    }
+  });
+
+  // 新着レス通知トグルスイッチchangeイベント
+  enableNotification.addEventListener('change', (e) => {
+    const isEnabled = e.target.checked;
+    sendStateToTab('SET_NOTIFICATION_STATE', { enabled: isEnabled });
+  });
+
+  // 棒読みちゃん連携トグルスイッチchangeイベント
   enableReading.addEventListener('change', (e) => {
     const isEnabled = e.target.checked;
     let currentStartResNumber = null;
@@ -277,36 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 画像の自動保存トグルスイッチchangeイベント
-  enableFileSave.addEventListener('change', (e) => {
-    const isEnabled = e.target.checked;
-    sendStateToTab('SET_FILESAVE_STATE', { enabled: isEnabled });
-
-    if (isEnabled) {
-      chrome.storage.local.get({ fileSaveStartText: SETTINGS_PARAMS.DEFAULT.fileSaveStartText }, (items) => {
-        // 棒読みちゃん連携が有効な時は開始メッセージを送信
-        if (enableReading.checked) {
-          speakTextInTab(items.fileSaveStartText);
-        }
-        // わんコメ連携が有効な時は開始メッセージを送信
-        if (enableOneComme.checked) {
-          sendOneCommeInTab(items.fileSaveStartText);
-        }
-      });
-    } else {
-      chrome.storage.local.get({ fileSaveEndText: SETTINGS_PARAMS.DEFAULT.fileSaveEndText }, (items) => {
-        // 棒読みちゃん連携が有効な時は停止メッセージを送信
-        if (enableReading.checked) {
-          speakTextInTab(items.fileSaveEndText);
-        }
-        // わんコメ連携が有効な時は停止メッセージを送信
-        if (enableOneComme.checked) {
-          sendOneCommeInTab(items.fileSaveEndText);
-        }
-      });
-    }
-  });
-
   // わんコメ連携トグルスイッチchangeイベント
   enableOneComme.addEventListener('change', (e) => {
     const isEnabled = e.target.checked;
@@ -327,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
-
 
   // 3. ポート番号のバリデーション
   bouyomiPort.addEventListener('focusout', (e) => {
@@ -402,24 +429,14 @@ document.addEventListener('DOMContentLoaded', () => {
     tab.addEventListener('click', (e) => {
       // activeタブの場合は何もしない
       if (tab.classList.contains("active")) return;
-      
-      // 一度すべてのタブからactiveを解除
-      menuTabs.forEach(taskTab => {
-        taskTab.classList.remove("active");
-      });
-      // クリック対象のタブをactiveにする
-      tab.classList.add("active");
+
       // アクティブにするブロックのIDを取得
       const activeTabId = tab.dataset.targetTab;
-
-      // 対象ブロックのアクティブ化
-      document.getElementById(activeTabId).classList.remove("d-none");
-      // 対象以外のブロックを非表示
-      menuTabBlocks.forEach(tabBlock => {
-        if (tabBlock.id !== activeTabId) {
-          tabBlock.classList.add("d-none");
-        }
-      });
+      
+      // 対象タブ有効化
+      tabActiveate(activeTabId);
+      
+      sendStateToTab('CURRENT_TAB_STATE', { currentTab: activeTabId });
     });
   });
 
