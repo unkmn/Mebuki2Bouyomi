@@ -9,6 +9,9 @@ const SETTINGS_PARAMS = {
   
   // chrome.storage.local のデフォルト値
   DEFAULT: {
+    // [簡易表示パネルの表示可否]
+    visiblePanel: true,
+
     // [配信支援機能の可否]
     enableStream: false,
 
@@ -100,6 +103,7 @@ const SELECTORS = {
   THREAD_HEADER_ROOT: 'main[data-slot="sidebar-inset"] header', // スレタイ検索の起点
   THREAD_TITLE: 'div.line-clamp-1', // スレタイ (THREAD_HEADER_ROOT の中で探す)
   THREAD_MESSAGES: 'div.thread-messages',
+  FIXED_AREA: 'div.pb-safe',
   RES_TAG: 'div', //レス領域のタグ（仕様変更での変化に対応しやすいように）
   RES_BLOCK: 'div.message-container',
   RES_CONTENT: 'div.message-content',
@@ -138,3 +142,10 @@ const MESSAGES = {
   THREAD_CLOSED_TEXT: "このスレはもう書き込みできません" // 検出する文字列
 };
 
+// style (CSS)
+const STYLES = {
+  BUTTON_BGCOLOR_OFF: "#e4e4e4ff",
+  BUTTON_BGCOLOR_ON: "#9aacfaff",
+  BUTTON_TEXTCOLOR_OFF: "#800000",
+  BUTTON_TEXTCOLOR_ON: "#3b0000ff"
+}

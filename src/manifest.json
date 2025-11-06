@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Mebuki2Bouyomi Beta",
-  "version": "0.2.0",
+  "name": "Mebuki2Bouyomi",
+  "version": "1.0.0",
   "description": "めぶき☆ちゃんねるのスレッドに書き込まれたレスをHTTP連携で棒読みちゃんに読み上げさせます。",
 
   "icons": {

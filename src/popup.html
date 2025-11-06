@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Mebuki2Bouyomi Alpha2</title>
+  <title>Mebuki2Bouyomi</title>
   <!-- CSS -->
   <link href="bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
@@ -16,7 +16,13 @@
   <div class="container-fluid">
 
     <div class="row sticky-top bg-head-thread border-bottom">
-      <h1 class="p-2">Mebuki2Bouyomi Beta</h1>
+      <h1 class="p-2">Mebuki2Bouyomi</h1>
+    </div>
+
+    <div class="form-check form-switch my-4">
+      <input class="form-check-input savable" type="checkbox" role="switch" id="visiblePanel">
+      <label class="form-check-label" for="visiblePanel">画面右下に簡易操作パネルを表示する</label>
+      <div class="form-text">※別タブにも設定を反映するには、該当タブでMebuki2Bouyomiのメニューを開くか、ページを再読み込みしてください</div>
     </div>
 
     <fieldset class="p-2 mt-4 mb-2">
@@ -29,15 +35,15 @@
 
       <div class="form-check form-switch my-3">
         <input class="form-check-input" type="checkbox" role="switch" id="enableFileSave">
-        <label class="form-check-label" for="enableFileSave">新着レスの画像を自動保存する</label>
+        <label class="form-check-label" for="enableFileSave">新着レスのファイルを自動保存する</label>
       </div>
 
       <div class="d-grid gap-2 mb-3">
-        <button type="button" class="btn btn-outline-primary" id="downloadAllImages">表示中のスレッド内の画像を全てDLする</button>
+        <button type="button" class="btn btn-outline-primary" id="downloadAllImages">表示中のスレッド内のファイルを全てDLする</button>
       </div>
     </fieldset>
 
-    <div>&nbsp;</div>
+    <div>&nbsp;</div>   
 
     <fieldset class="p-2 my-2">
       <legend class="category-title bg-head-bouyomi">棒読みちゃん</legend>
@@ -104,65 +110,6 @@
         <a class="nav-link js-menutab" data-target-tab="settingTabNg" href="#">NG管理</a>
       </li>
     </ul>
-
-    <div id="settingTabBouyomi" class="js-tabblock">
-      <h3>棒読みちゃん 連携設定</h3>
-
-      <div class="mt-2 mb-4">
-        棒読みちゃん連携設定の説明については<a href="https://github.com/unkmn/Mebuki2Bouyomi?tab=readme-ov-file#%E6%A3%92%E8%AA%AD%E3%81%BF%E3%81%A1%E3%82%83%E3%82%93-%E9%80%A3%E6%90%BA%E8%A8%AD%E5%AE%9A" target="_blank">こちら</a>
-      </div>
-
-      <div class="mb-4">
-        <label for="bouyomiPort" class="form-label">棒読みちゃん HTTPポート番号</label>
-        <input type="number" class="form-control savable" id="bouyomiPort" aria-describedby="basic-addon3 basic-addon4" min="0" max="65535" value="50080">
-        <div class="form-text">※デフォルト値 = 50080</div>
-      </div>
-
-      <div class="card mb-4">
-        <div class="card-header bg-head-thread text-color-mebuki">
-          以下のテキストを検出したら自動で読み上げ開始
-        </div>
-        <div class="card-body">
-          <div class="mb-2">
-            <label for="autoStartKeywordByTitle" class="form-label">スレタイトル（空白OK）</label>
-            <input type="text" class="form-control savable" id="autoStartKeywordByTitle" aria-describedby="basic-addon3 basic-addon4">
-          </div>
-          <div>
-            <label for="autoStartKeywordByBody" class="form-label">スレ本文（空白OK）</label>
-            <input type="text" class="form-control savable" id="autoStartKeywordByBody" aria-describedby="basic-addon3 basic-addon4">
-          </div>
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label for="startText" class="form-label">読み上げ開始時テキスト（空白OK）</label>
-        <input type="text" class="form-control savable" id="startText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを開始します">
-      </div>
-      <div class="mb-4">
-        <label for="endText" class="form-label">読み上げ停止時テキスト（空白OK）</label>
-        <input type="text" class="form-control savable" id="endText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを停止します">
-      </div>
-
-      <div class="form-check mb-4">
-        <input class="form-check-input savable" type="checkbox" value="" id="readSpoiler">
-        <label class="form-check-label" for="readSpoiler">スポイラーで伏せられた部分も読み上げる</label>
-      </div>
-
-      <div class="form-check mb-4">
-        <input class="form-check-input savable" type="checkbox" value="" id="ignoreNewlines">
-        <label class="form-check-label" for="ignoreNewlines">改行を無視する</label>
-      </div>
-
-      <div class="form-check mb-4">
-        <input class="form-check-input savable" type="checkbox" value="" id="ignoreKita">
-        <label class="form-check-label" for="ignoreKita">ｷﾀｰを無視する</label>
-      </div>
-
-      <div class="mb-4">
-        <label for="threadClosedText" class="form-label">スレ落ち時に読み上げるテキスト（空白OK）</label>
-        <input type="text" class="form-control savable" id="threadClosedText" aria-describedby="basic-addon3 basic-addon4" value="スレッドが落ちました">
-      </div>
-    </div>
 
     <div id="settingTabDownload" class="js-tabblock d-none">
       <h3>ファイル保存設定</h3>
@@ -237,6 +184,65 @@
       <div class="mb-4">
         <label for="fileSaveNotificationText" class="form-label">ファイル保存時に読み上げるテキスト （空白OK）</label>
         <input type="text" class="form-control savable" id="fileSaveNotificationText" aria-describedby="basic-addon3 basic-addon4" value="ファイルを保存しました">
+      </div>
+    </div>
+
+    <div id="settingTabBouyomi" class="js-tabblock">
+      <h3>棒読みちゃん 連携設定</h3>
+
+      <div class="mt-2 mb-4">
+        棒読みちゃん連携設定の説明については<a href="https://github.com/unkmn/Mebuki2Bouyomi?tab=readme-ov-file#%E6%A3%92%E8%AA%AD%E3%81%BF%E3%81%A1%E3%82%83%E3%82%93-%E9%80%A3%E6%90%BA%E8%A8%AD%E5%AE%9A" target="_blank">こちら</a>
+      </div>
+
+      <div class="mb-4">
+        <label for="bouyomiPort" class="form-label">棒読みちゃん HTTPポート番号</label>
+        <input type="number" class="form-control savable" id="bouyomiPort" aria-describedby="basic-addon3 basic-addon4" min="0" max="65535" value="50080">
+        <div class="form-text">※デフォルト値 = 50080</div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-head-thread text-color-mebuki">
+          以下のテキストを検出したら自動で読み上げ開始
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <label for="autoStartKeywordByTitle" class="form-label">スレタイトル（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoStartKeywordByTitle" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+          <div>
+            <label for="autoStartKeywordByBody" class="form-label">スレ本文（空白OK）</label>
+            <input type="text" class="form-control savable" id="autoStartKeywordByBody" aria-describedby="basic-addon3 basic-addon4">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="startText" class="form-label">読み上げ開始時テキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="startText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを開始します">
+      </div>
+      <div class="mb-4">
+        <label for="endText" class="form-label">読み上げ停止時テキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="endText" aria-describedby="basic-addon3 basic-addon4" value="スレッドの読み上げを停止します">
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="readSpoiler">
+        <label class="form-check-label" for="readSpoiler">スポイラーで伏せられた部分も読み上げる</label>
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="ignoreNewlines">
+        <label class="form-check-label" for="ignoreNewlines">改行を無視する</label>
+      </div>
+
+      <div class="form-check mb-4">
+        <input class="form-check-input savable" type="checkbox" value="" id="ignoreKita">
+        <label class="form-check-label" for="ignoreKita">ｷﾀｰを無視する</label>
+      </div>
+
+      <div class="mb-4">
+        <label for="threadClosedText" class="form-label">スレ落ち時に読み上げるテキスト（空白OK）</label>
+        <input type="text" class="form-control savable" id="threadClosedText" aria-describedby="basic-addon3 basic-addon4" value="スレッドが落ちました">
       </div>
     </div>
 

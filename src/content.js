@@ -25,7 +25,7 @@ let ngWordsList = []; // NGワードリスト
 const bouyomiBaseUrl = "http://localhost:";
 
 // --- UI要素 (content.js が挿入) ---
-let controlPanel, btnStartFromNew, btnStop, statusTextRunning, statusTextStopped;
+let controlPanel, btnNotificationEnable, btnAutoSaveEnable, btnReadEnable, liOneComme, btnOneCommeEnable
 
 /**
  * 指定されたセレクタの要素がDOMに登場するまで待機する
@@ -48,7 +48,6 @@ async function waitForElement(selector, root = document, timeout = 5000) {
       elapsedTime += intervalTime;
       if (elapsedTime >= timeout) {
         clearInterval(interval);
-        console.warn(`Element not found (timeout): ${selector}`);
         resolve(null);
       }
     }, intervalTime);
@@ -62,13 +61,7 @@ async function waitForElement(selector, root = document, timeout = 5000) {
   await loadSettings();
   const currentUrl = window.location.href;
   if (currentUrl.startsWith(URL_PARAM.MEBUKI_PARENT)) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', async () => {
-        await initializeThreadPage();
-      });
-    } else {
-      await initializeThreadPage();
-    }
+    await initializeThreadPage();
   }
 })();
 
@@ -79,7 +72,11 @@ async function initializeThreadPage() {
   const currentUrl = window.location.href;
   // スレッドページの時のみ実行する初期化処理
   if (currentUrl.startsWith(URL_PARAM.MEBUKI_THREAD)) {
-    //insertControlUI();
+    const threadAreaElement = await waitForElement(SELECTORS.FIXED_AREA);
+    if (!threadAreaElement) return;
+    // 操作パネル表示
+    const panelArea = threadAreaElement.parentElement;
+    insertControlUI(panelArea);
     // 自動連携開始処理
     await checkAutoStart();
   }
@@ -175,51 +172,162 @@ function handleTitleChanges(mutationsList) {
 /**
  * 読み上げ制御UIをページに挿入
  */
-function insertControlUI() {
-  const mainElement = document.querySelector('main[data-slot="sidebar-inset"]');
-  if (!mainElement) return;
+function insertControlUI(panelArea) {
+  const body = document.querySelector('body');
 
+  // 枠を作成
   controlPanel = document.createElement('div');
   controlPanel.className = 'mebuki-bouyomi-controller';
-  btnStartFromNew = document.createElement('button');
-  btnStartFromNew.id = 'btnStartFromNew';
-  btnStartFromNew.textContent = '新着レスから読み上げる';
-  btnStop = document.createElement('button');
-  btnStop.id = 'btnStop';
-  btnStop.textContent = '読み上げ停止';
-  statusTextRunning = document.createElement('span');
-  statusTextRunning.id = 'statusTextRunning';
-  statusTextRunning.textContent = '読み上げ：実行中';
-  statusTextStopped = document.createElement('span');
-  statusTextStopped.id = 'statusTextStopped';
-  statusTextStopped.textContent = '読み上げ：停止中';
+  controlPanel.style.position = "fixed";
+  controlPanel.style.width = "10rem";
+  controlPanel.style.right = "20px";
+  controlPanel.style.bottom = "100px";
+  controlPanel.style.opacity = "0.6";
+  controlPanel.style.background = "#feffef";
+  controlPanel.style.color = "#800000";
+  controlPanel.style.display = "none";
 
-  controlPanel.appendChild(btnStartFromNew);
-  controlPanel.appendChild(btnStop);
-  controlPanel.appendChild(statusTextRunning);
-  controlPanel.appendChild(statusTextStopped);
-  mainElement.prepend(controlPanel);
+  const controllPanelUl = document.createElement('ul');
+  controllPanelUl.style.width = "100%";
 
-  updateControlUI(false);
+  // 見出し
+  const liTitle = document.createElement('li');
+  liTitle.textContent = APP_NAME;
+  liTitle.style.width = "100%";
+  liTitle.style.textAlign = "center";
+  controllPanelUl.appendChild(liTitle);
 
-  btnStartFromNew.addEventListener('click', () => {
-    // ボタン押下時は、タブが現在保持している開始位置で開始
-    startReading(tabReadingStartPosition, null); 
+  // 新着レス通知ボタン
+  const liNotification = document.createElement('li');
+  liNotification.style.width="100%";
+  btnNotificationEnable = document.createElement('button');
+  btnNotificationEnable.id = "btnNotificationEnable";
+  btnNotificationEnable.textContent = "新着レス通知";
+  btnNotificationEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+  btnNotificationEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  btnNotificationEnable.style.width="100%";
+  liNotification.appendChild(btnNotificationEnable);
+  controllPanelUl.appendChild(liNotification);
+
+  // ファイル自動保存ボタン
+  const liAutoSave = document.createElement('li');
+  liAutoSave.style.width="100%";
+  btnAutoSaveEnable = document.createElement('button');
+  btnAutoSaveEnable.id = "btnAutoSaveEnable";
+  btnAutoSaveEnable.textContent = "ファイル自動保存"
+  btnAutoSaveEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+  btnAutoSaveEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  btnAutoSaveEnable.style.width="100%";
+  liAutoSave.appendChild(btnAutoSaveEnable);
+  controllPanelUl.appendChild(liAutoSave);
+  // 棒読みちゃん連携ボタン
+  const liRead = document.createElement('li');
+  liRead.style.width="100%";
+  btnReadEnable = document.createElement('button');
+  btnReadEnable.id = 'btnReadEnable';
+  btnReadEnable.textContent = '棒読みちゃん';
+  btnReadEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+  btnReadEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  btnReadEnable.style.width="100%";
+  liRead.appendChild(btnReadEnable);
+  controllPanelUl.appendChild(liRead);
+  // わんコメ連携ボタン
+  liOneComme = document.createElement('li');
+  liOneComme.style.width="100%";
+  btnOneCommeEnable = document.createElement('button');
+  btnOneCommeEnable.id = "btnOneCommeEnable";
+  btnOneCommeEnable.textContent = "わんコメ";
+  btnOneCommeEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+  btnOneCommeEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  btnOneCommeEnable.style.width="100%";
+  liOneComme.appendChild(btnOneCommeEnable);
+  controllPanelUl.appendChild(liOneComme);
+
+  controlPanel.appendChild(controllPanelUl);
+  
+  body.appendChild(controlPanel);
+
+  updateControlUI();
+
+  btnNotificationEnable.addEventListener('click', () => {
+    isNotification = !isNotification;
+    updateControlUI();
+    updateMonitoringState();
   });
-  btnStop.addEventListener('click', () => {
-    stopReading();
+  btnAutoSaveEnable.addEventListener('click', () => {
+    if (!isFileSaveActive) {
+      startAutoSave();
+    } else {
+      stopAutoSave();
+    }
+  });
+  btnReadEnable.addEventListener('click', () => {
+    if (!isReadingActive) {
+      startReading(0, null); 
+    } else {
+      stopReadingInternal();
+    }
+    
+  });
+  btnOneCommeEnable.addEventListener('click', () => {
+    if (!isOneCommeActive) {
+      startOneComme();
+    } else {
+      stopOneComme();
+    }
   });
 }
 
 /**
  * 制御UIの表示/非表示を更新
  */
-function updateControlUI(isReading) {
+function updateControlUI() {
   if (!controlPanel) return;
-  btnStartFromNew.style.display = isReading ? 'none' : 'inline-block';
-  statusTextStopped.style.display = isReading ? 'none' : 'inline-block';
-  btnStop.style.display = isReading ? 'inline-block' : 'none';
-  statusTextRunning.style.display = isReading ? 'inline-block' : 'none';
+
+  if (currentSettings.visiblePanel) {
+    controlPanel.style.display = "";
+  } else {
+    controlPanel.style.display = "none";
+  }
+  
+  if (isNotification) {
+    btnNotificationEnable.style.background = STYLES.BUTTON_BGCOLOR_ON;
+    btnNotificationEnable.style.color = STYLES.BUTTON_TEXTCOLOR_ON;
+  } else {
+    btnNotificationEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+    btnNotificationEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  }
+
+  if (isFileSaveActive) {
+    btnAutoSaveEnable.style.background = STYLES.BUTTON_BGCOLOR_ON;
+    btnAutoSaveEnable.style.color = STYLES.BUTTON_TEXTCOLOR_ON;
+  } else {
+    btnAutoSaveEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+    btnAutoSaveEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  }
+  
+  if (isReadingActive) {
+    btnReadEnable.style.background = STYLES.BUTTON_BGCOLOR_ON;
+    btnReadEnable.style.color = STYLES.BUTTON_TEXTCOLOR_ON;
+  } else {
+    btnReadEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+    btnReadEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  }
+
+  if (currentSettings.enableStream) {
+    liOneComme.style.display = "";  // パネルのわんコメ連携ボタンを表示
+  } else {
+    liOneComme.style.display = "none";  // パネルのわんコメ連携ボタンを非表示
+    isOneCommeActive = false;           // わんコメ連携も無効化する
+  }
+
+  if (isOneCommeActive) {
+    btnOneCommeEnable.style.background = STYLES.BUTTON_BGCOLOR_ON;
+    btnOneCommeEnable.style.color = STYLES.BUTTON_TEXTCOLOR_ON;
+  } else {
+    btnOneCommeEnable.style.background = STYLES.BUTTON_BGCOLOR_OFF;
+    btnOneCommeEnable.style.color = STYLES.BUTTON_TEXTCOLOR_OFF;
+  }
 }
 
 /**
@@ -308,14 +416,11 @@ async function checkAutoStart() {
   }
 
   // 自動わんコメ連携開始
-  if (currentSettings.enableStream) {
+  if (currentSettings.enableStream) { //配信支援機能が有効な場合のみ処理を実施
     if (bodyMatchOneComme || titleMatchOneComme) {
       if (!isOneCommeActive) {
         // わんコメ連携を有効化
-        isOneCommeActive = true;
-        updateMonitoringState();
-        // ローカル保存の oneCommeStartText を使う
-        await sendToOneCommeBySystem(currentSettings.oneCommeStartText);
+        startOneComme();
         await new Promise(r => setTimeout(r, 10));
       }
     }
@@ -330,16 +435,11 @@ async function checkAutoStart() {
   if (bodyMatchSave || titleMatchSave) {
     if (!isFileSaveActive) {
       // ファイルの自動保存を有効化
-      isFileSaveActive = true;
-      updateMonitoringState(); 
-      if (isReadingActive) {
-        await sendToBouyomiWrapper(currentSettings.fileSaveStartText);
-      }
-      if (isOneCommeActive) {
-        await sendToOneCommeBySystem(currentSettings.fileSaveStartText);
-      }
+      startAutoSave();
     }
   }
+
+  updateControlUI();
 }
 
 /**
@@ -365,10 +465,15 @@ const sendToBouyomiWrapper = async (text, compSpeakFlag = false) => {
     }
     isReadingErrorFlag = false;
 
+    // パネルの状態更新
+    updateControlUI();
+
     // 連携失敗時
     return false;
   }
 
+  // パネルの状態更新
+  updateControlUI();
   // 連携成功時
   return true;
 };
@@ -376,8 +481,9 @@ const sendToBouyomiWrapper = async (text, compSpeakFlag = false) => {
 /**
  * システムによるわんコメへのメッセージ転送
  */
-const sendToOneCommeBySystem = async (text) => {
+const sendToOneCommeBySystem = async (text, compSendFlag = false) => {
   if (!text) return;
+  if (!isOneCommeActive && !compSendFlag) return;
   // 現在日時を元にユニークなメッセージIDを生成
   const date = new Date();
   messageId = "mebuki_" + date.getFullYear().toString().padStart(4, '0') + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0') + date.getHours().toString().padStart(2, '0') + date.getMinutes().toString().padStart(2, '0') + date.getSeconds().toString().padStart(2, '0') + date.getMilliseconds().toString().padStart(3, '0');
@@ -390,6 +496,8 @@ const sendToOneCommeBySystem = async (text) => {
 
       // わんコメへリクエストできなかった場合は連携を停止
       isOneCommeActive = false;
+      // パネルの状態更新
+      updateControlUI();
       // 監視状態の更新
       updateMonitoringState();
       
@@ -397,6 +505,7 @@ const sendToOneCommeBySystem = async (text) => {
     }
     isOneCommeErrorFlag = false;
   }
+  return sendResult;
 }
 
 /**
@@ -414,6 +523,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   switch (message.type) {
     case 'SET_NOTIFICATION_STATE':
       isNotification = message.payload.enabled;
+      updateControlUI();
       updateMonitoringState();
       break;
 
@@ -455,17 +565,38 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       break;
     
     case 'SET_FILESAVE_STATE':
+      const wasFileSave = isFileSaveActive;
       isFileSaveActive = message.payload.enabled;
+
+      if (isFileSaveActive && !wasFileSave) { // OFF -> ON
+        startAutoSave();
+      } else if (!isFileSaveActive && wasFileSave) { // ON -> OFF
+        stopAutoSave();
+      }
+
+      updateControlUI();
       updateMonitoringState();
       break;
 
     case 'SET_ONECOMME_STATE':
+      const wasOneComme = isOneCommeActive;
       isOneCommeActive = message.payload.enabled;
-      updateMonitoringState();
-      // 有効化の場合はスレID保存処理を実行
-      if (isOneCommeActive) {
-        saveThreadIdIfNeeded();
+      
+      if (isOneCommeActive && !wasOneComme) { // OFF -> ON
+        startOneComme();
+        // 有効化の場合はスレID保存処理を実行
+        if (isOneCommeActive) {
+          saveThreadIdIfNeeded();
+        }
+      } else if (!isOneCommeActive && wasOneComme) {  // ON -> OFF
+        stopOneComme();
       }
+      
+      break;
+
+    case 'CHANGE_VISIBLE':
+      updateControlUI();
+      updateMonitoringState();      
       break;
     
     case 'CURRENT_TAB_STATE':
@@ -695,7 +826,7 @@ async function startReading(startPosition, startResNumber) {
   const sendResult = await sendToBouyomiWrapper(currentSettings.startText);
   if (!sendResult) return;
   updateMonitoringState();
-  updateControlUI(true);
+  updateControlUI();
   
   // --- 開始位置に応じた初回読み上げ ---
   if (startPosition === "1" || startPosition === "2") {
@@ -734,12 +865,10 @@ async function startReading(startPosition, startResNumber) {
  * 読み上げ停止（内部処理）
  */
 async function stopReadingInternal() {
-  if (isReadingActive) return;
+  if (isReadingActive) isReadingActive = false;
   await sendToBouyomiWrapper(currentSettings.endText, true);
 
-  isReadingActive = false;
-
-  updateControlUI(false);
+  updateControlUI();
   updateMonitoringState();
 }
 
@@ -748,6 +877,72 @@ async function stopReadingInternal() {
  */
 function stopReading() {
   stopReadingInternal();
+}
+
+/**
+ * わんコメ連携開始 (ボタンクリック時, 自動開始, popup.jsから)
+ */
+async function startOneComme() {
+  // 読み上げ開始時に isOneCommeActive を true にする
+  if (!isOneCommeActive) {
+    isOneCommeActive = true;
+  }
+
+  const sendResult = await sendToOneCommeBySystem(currentSettings.oneCommeStartText);
+  if (!sendResult) return;
+ 
+  updateMonitoringState();
+  updateControlUI();
+}
+
+/**
+ * わんコメ連携停止（内部処理）
+ */
+async function stopOneComme() {
+  if (isOneCommeActive) isOneCommeActive = false;
+  await sendToOneCommeBySystem(currentSettings.oneCommeEndText, true);
+
+  isOneCommeActive = false;
+
+  updateControlUI();
+  updateMonitoringState();
+}
+
+/**
+ * ファイル自動保存開始 (ボタンクリック時, 自動開始, popup.jsから)
+ */
+async function startAutoSave() {
+  // ファイル自動保存の開始時に isFileSaveActive を true にする
+  if (!isFileSaveActive) {
+    isFileSaveActive = true;
+  }
+
+  if (isReadingActive) {
+    await sendToBouyomiWrapper(currentSettings.fileSaveStartText);
+  }
+  if (isOneCommeActive) {
+    await sendToOneCommeBySystem(currentSettings.fileSaveStartText);
+  }
+ 
+  updateMonitoringState();
+  updateControlUI();
+}
+
+/**
+ * ファイル自動保存停止（内部処理）
+ */
+async function stopAutoSave() {
+  if (isFileSaveActive) isFileSaveActive = false;
+
+  if (isReadingActive) {
+    await sendToBouyomiWrapper(currentSettings.fileSaveEndText);
+  }
+  if (isOneCommeActive) {
+    await sendToOneCommeBySystem(currentSettings.fileSaveEndText);
+  }
+
+  updateControlUI();
+  updateMonitoringState();
 }
 
 /**
@@ -772,7 +967,7 @@ function handleThreadStatusChanges(mutationsList) {
           isReadingActive = false;
           isFileSaveActive = false;
           
-          updateControlUI(false);
+          updateControlUI();
           updateMonitoringState();
           
           chrome.runtime.sendMessage({ type: 'STOP_ALL_MONITORING' });
@@ -1128,7 +1323,6 @@ async function processNotification(messageElement, downloadText) {
   }
 
   if (text) {
-    console.log("processNotification text=" + text);
     // background.js の通知処理へ送る
     chrome.runtime.sendMessage({ 
       type: 'SHOW_NOTIFICATION', 

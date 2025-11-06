@@ -1,6 +1,7 @@
 // popup.js
 document.addEventListener('DOMContentLoaded', () => {
   // --- 要素の取得 ---
+  const visiblePanel = document.getElementById('visiblePanel');
   const enableNotification = document.getElementById('enableNotification');
   const enableFileSave = document.getElementById('enableFileSave');
   const settingsToSave = document.querySelectorAll('.savable');
@@ -41,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // わんコメ連携を停止
       enableOneComme.checked = false;
     }
+    // パネルの有効・無効も切り替え
+    sendStateToTab('CHANGE_VISIBLE', { });
   }
 
   const tabActiveate = (activeTabId) => {
@@ -62,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * 1. 設定の読み込み (ローカルに保存するもののみ)
+   * 設定の読み込み (ローカルに保存するもののみ)
    */
   const loadSettings = () => {
     // constants.js からデフォルト値を取得
@@ -98,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /**
-   * 2. 設定の保存 (ローカルに保存するもののみ)
+   * 設定の保存 (ローカルに保存するもののみ)
    */
   const saveSetting = (e) => {
     const input = e.target;
@@ -120,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /**
-   * 3. (保存しない)状態をアクティブタブのContent Scriptに送信
+   * (保存しない)状態をアクティブタブのContent Scriptに送信
    */
   const sendStateToTab = (type, payload) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -156,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   /**
-   * 4. Content Scriptから現在の状態を取得してUIに反映
+   * Content Scriptから現在の状態を取得してUIに反映
    */
   const syncStateFromTab = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -256,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   syncStateFromTab();
 
-  // 1. ローカルに保存する設定
+  // ローカルに保存する設定
   settingsToSave.forEach(input => {
     const eventType = (input.type === 'checkbox' || input.type === 'select-one') ? 'change' : 'focusout';
     input.addEventListener(eventType, saveSetting);
@@ -266,30 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
   enableFileSave.addEventListener('change', (e) => {
     const isEnabled = e.target.checked;
     sendStateToTab('SET_FILESAVE_STATE', { enabled: isEnabled });
-
-    if (isEnabled) {
-      chrome.storage.local.get({ fileSaveStartText: SETTINGS_PARAMS.DEFAULT.fileSaveStartText }, (items) => {
-        // 棒読みちゃん連携が有効な時は開始メッセージを送信
-        if (enableReading.checked) {
-          speakTextInTab(items.fileSaveStartText);
-        }
-        // わんコメ連携が有効な時は開始メッセージを送信
-        if (enableOneComme.checked) {
-          sendOneCommeInTab(items.fileSaveStartText);
-        }
-      });
-    } else {
-      chrome.storage.local.get({ fileSaveEndText: SETTINGS_PARAMS.DEFAULT.fileSaveEndText }, (items) => {
-        // 棒読みちゃん連携が有効な時は停止メッセージを送信
-        if (enableReading.checked) {
-          speakTextInTab(items.fileSaveEndText);
-        }
-        // わんコメ連携が有効な時は停止メッセージを送信
-        if (enableOneComme.checked) {
-          sendOneCommeInTab(items.fileSaveEndText);
-        }
-      });
-    }
   });
 
   // 新着レス通知トグルスイッチchangeイベント
@@ -343,20 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isEnabled) {
       // 実行中はわんコメIDの設定を無効化
       oneCommeId.disabled = true;
-
-      chrome.storage.local.get({ oneCommeStartText: SETTINGS_PARAMS.DEFAULT.oneCommeStartText }, (items) => {
-        sendOneCommeInTab(items.oneCommeStartText);
-      });
     } else {
       oneCommeId.disabled = false;
-
-      chrome.storage.local.get({ oneCommeEndText: SETTINGS_PARAMS.DEFAULT.oneCommeEndText }, (items) => {
-        sendOneCommeInTab(items.oneCommeEndText);
-      });
     }
   });
 
-  // 3. ポート番号のバリデーション
+  // ポート番号のバリデーション
   bouyomiPort.addEventListener('focusout', (e) => {
     const port = parseInt(e.target.value, 10);
     if (isNaN(port) || port < 0 || port > 65535) {
@@ -367,13 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 5. NGワード管理画面を開く
+  // NGワード管理画面を開く
   openNgOptions.addEventListener('click', (e) => {
     e.preventDefault();
     chrome.runtime.openOptionsPage();
   });
 
-  // 6. 全画像DLボタン
+  // 全画像DLボタン
   if (downloadAllButton) {
     downloadAllButton.addEventListener('click', () => {
       if (confirm(MESSAGES.CONFIRM.ALL_IMG_DL)) {
@@ -387,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  // 7. 読み上げ開始位置プルダウン
+  // 読み上げ開始位置プルダウン
   readingStartPosition.addEventListener('change', (e) => {
     const selectedValue = e.target.value;
     updateResNumberInputVisibility(selectedValue);
@@ -398,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // 8. 指定レス番号入力欄
+  // 指定レス番号入力欄
   startReadingResNumber.addEventListener('focusout', (e) => {
     // バリデーション（読み上げボタンの有効/無効を更新するため）
     validateResNumber();
@@ -408,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // 9. content.js からの完了通知
+  // content.js からの完了通知
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'DOWNLOAD_ALL_COMPLETE') {
       if (downloadAllButton) {
@@ -444,5 +415,9 @@ document.addEventListener('DOMContentLoaded', () => {
   enabledStream.addEventListener('change', (e) => {
     changeEnableStream(enabledStream.checked);
   });
-});
 
+  // 右下パネルの表示有無切り替えイベント
+  visiblePanel.addEventListener('change', (e) => {
+    sendStateToTab('CHANGE_VISIBLE', { });
+  });
+});
