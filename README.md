@@ -5,10 +5,7 @@ PC向けGoogle ChromeとMicrosoft Edgeで動作します。
 <br>
 
 # ダウンロード<!-- omit in toc -->
-[＞＞＞ Mebuki2Bouyomi ダウンロード ＜＜＜](https://github.com/unkmn/Mebuki2Bouyomi/blob/main/mebuki2bouyomi_1.0.0.zip)<br>
-<br>
-リンク先でダウンロードボタンを押すとZIP形式でダウンロードできます。<br>
-![alt text](docImages/download.jpg)<br>
+[＞＞＞ Mebuki2Bouyomi ダウンロード ＜＜＜](https://github.com/unkmn/Mebuki2Bouyomi/releases/download/v.1.0.0/mebuki2bouyomi_1.0.0.zip)<br>
 <br>
 - 2025/11/06 ver.1.0.0
   - 画面右下に簡易操作パネルを追加（表示無しにも変更可）
